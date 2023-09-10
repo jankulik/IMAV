@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from osgeo import osr, gdal
 
-gdal.PushErrorHandler("CPLQuietErrorHandler")
+gdal.DontUseExceptions()
 
 
 def get_hsv_range(image, lower_color, upper_color):
@@ -106,4 +106,4 @@ def find_path(image_path, num_points=4, show=False):
         cv2.destroyAllWindows()
 
 
-find_path("data/orthophoto.tif", show=False)
+find_path("data/orthophoto.tif", num_points=4, show=False)
