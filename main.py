@@ -98,7 +98,7 @@ def find_path(image_path, num_points=4, show=False):
         iteration_number=0,
     )
 
-    cv2.imwrite("data/ortophoto_trail.png", img)
+    cv2.imwrite("orthophotos/ortophoto_trail.png", img)
 
     if show:
         cv2.imshow("Detected Blue Squares", img)
@@ -106,4 +106,4 @@ def find_path(image_path, num_points=4, show=False):
         cv2.destroyAllWindows()
 
 
-find_path("data/orthophoto.tif", num_points=4, show=False)
+find_path("orthophotos/orthophoto.tif", num_points=4, show=False)

@@ -51,3 +51,7 @@ docs/_build/
 
 # Models
 *.pt
+
+# Images
+*.jpg
+*.png

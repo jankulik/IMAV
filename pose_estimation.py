@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 import os
+import json
 
 
 def load_model():
@@ -52,21 +53,70 @@ def visualize_output(output, image, show=False):
     with torch.no_grad():
         output = output_to_keypoint(output)
 
-    print(output.shape)
-    print(output)
     nimg = image[0].permute(1, 2, 0) * 255
     nimg = nimg.cpu().numpy().astype(np.uint8)
     nimg = cv2.cvtColor(nimg, cv2.COLOR_RGB2BGR)
-    for idx in range(output.shape[0]):
-        plot_skeleton_kpts(nimg, output[idx, 7:].T, 3)
-    cv2.imwrite("data/output.png", nimg)
 
-    if show:
-        plt.figure(figsize=(12, 12))
-        plt.axis("off")
-        plt.imshow(nimg)
-        plt.show()
+    # body_points = np.zeros((output.shape[0], 17, 2))
+    # for idx in range(output.shape[0]):
+    #     new_body_points = plot_skeleton_kpts(nimg, output[idx, 7:].T, 3)
+    #     body_points[idx] = new_body_points
+
+    # # cv2.imwrite("state_images/output.png", nimg)
+
+    # if show:
+    #     plt.figure(figsize=(12, 12))
+    #     plt.axis("off")
+    #     plt.imshow(nimg)
+    #     plt.show()
+
+    # return body_points
 
 
-output, image = run_inference("data/IMG_1507.jpg")
-visualize_output(output, image, show=False)
+def calc_distance(p1, p2):
+    return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
+
+
+def calc_angle(p1, p2, p3):
+    distance12 = calc_distance(p1, p2)
+    distance23 = calc_distance(p2, p3)
+    distance31 = calc_distance(p3, p1)
+
+    angle = np.arccos((distance31**2 - distance12**2 - distance23**2) / (-2 * distance12 * distance23))
+    return angle * 180 / np.pi
+
+
+with open("state_images/labels.json") as f:
+    labels = json.load(f)
+directory = "state_images"
+for file in os.listdir(directory):
+    filename = os.fsdecode(file)
+    if filename.endswith(".jpg") and filename != "IMG_1443.jpg":
+        print(f"file {filename}")
+
+        file_path = os.path.join(directory, filename)
+        output, image = run_inference(file_path)
+        body_points = visualize_output(output, image, show=False)
+
+        # angle1 = calc_angle(
+        #     [body_points[0, 5, 0], body_points[0, 5, 1]],
+        #     [body_points[0, 11, 0], body_points[0, 11, 1]],
+        #     [body_points[0, 13, 0], body_points[0, 13, 1]],
+        # )
+
+        # angle2 = calc_angle(
+        #     [body_points[0, 6, 0], body_points[0, 6, 1]],
+        #     [body_points[0, 12, 0], body_points[0, 12, 1]],
+        #     [body_points[0, 14, 0], body_points[0, 14, 1]],
+        # )
+
+        # min_angle = np.min([angle1, angle2])
+
+        # print(f"file {filename}")
+        # print(f"angle1 {angle1}")
+        # print(f"angle2 {angle2}")
+        # print(f"min angle {min_angle}")
+        # print(f"label {labels[filename]}")
+        # print("---------------------")
+    else:
+        continue
