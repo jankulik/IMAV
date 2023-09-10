@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 from osgeo import osr, gdal
 
+gdal.PushErrorHandler("CPLQuietErrorHandler")
+
 
 def get_hsv_range(image, lower_color, upper_color):
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -23,7 +25,13 @@ def draw_shortest_path(img, image_path, starting_location, locations, iteration_
     cv2.line(img, tuple(starting_location), tuple(next_location), (0, 255, 0), 5)
     new_locations = np.delete(locations, next_location_index, axis=0)
 
-    draw_shortest_path(img, image_path, next_location, new_locations, iteration_number=iteration_number + 1)
+    draw_shortest_path(
+        img,
+        image_path,
+        next_location,
+        new_locations,
+        iteration_number=iteration_number + 1,
+    )
 
 
 def get_pixel_latlon(image_path, pixel_x, pixel_y):
@@ -83,10 +91,14 @@ def find_path(image_path, num_points=4, show=False):
     starting_location_index = np.argmin(distances_from_hikers)
     starting_location = centroids[starting_location_index]
     draw_shortest_path(
-        img, image_path, starting_location, np.delete(centroids, starting_location_index, axis=0), iteration_number=0
+        img,
+        image_path,
+        starting_location,
+        np.delete(centroids, starting_location_index, axis=0),
+        iteration_number=0,
     )
 
-    cv2.imwrite("data/trail.png", img)
+    cv2.imwrite("data/ortophoto_trail.png", img)
 
     if show:
         cv2.imshow("Detected Blue Squares", img)
@@ -94,4 +106,4 @@ def find_path(image_path, num_points=4, show=False):
         cv2.destroyAllWindows()
 
 
-find_path("data/orthophoto.tif", show=True)
+find_path("data/orthophoto.tif", show=False)
