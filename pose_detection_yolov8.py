@@ -4,7 +4,7 @@ import json
 import os
 import numpy as np
 
-model = YOLO("models/yolov7-w6-pose.pt")
+model = YOLO("models/yolov8x-pose.pt")
 
 
 def calc_distance(point_1, point_2):
@@ -59,20 +59,34 @@ def scan_image(image_path, labels=None, save_image=False):
             for point in detected_object:
                 image = cv2.circle(image, (int(point[0]), int(point[1])), radius=8, color=(0, 0, 255), thickness=-1)
 
-        cv2.imwrite(os.path.join("results", f"{image_name[:-4]}_detected.png"), image)
+        cv2.imwrite(os.path.join("state_results", f"{image_name.split('.')[-2]}_detected.png"), image)
 
 
 def scan_images(directory, save_images=False):
     with open(os.path.join(directory, "labels.json")) as f:
         labels = json.load(f)
+
+    files = []
     for file in os.listdir(directory):
         filename = os.fsdecode(file)
-        if filename.endswith(".jpg"):
+        files.append(filename)
+        if filename.endswith(".jpeg"):
             image_path = os.path.join(directory, filename)
             scan_image(image_path, labels, save_image=save_images)
         else:
             continue
 
+    for file in files:
+        if file.endswith(".jpeg"):
+            print(file)
+
 
 scan_images("state_images", save_images=True)
 # scan_image("state_images/IMG_1507.jpg", save_image=True)
+
+
+"""
+if legs < 1.3 * barki -> standing
+if legs > 2 * barki -> 
+
+"""

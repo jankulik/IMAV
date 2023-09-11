@@ -1,10 +1,71 @@
-from ultralytics import YOLO
+import torch
 import cv2
-import json
-import os
+from torchvision import transforms
 import numpy as np
+from utils.datasets import letterbox
+from utils.general import non_max_suppression_kpt
+from utils.plots import output_to_keypoint, plot_skeleton_kpts
+import os
+import json
 
-model = YOLO("models/yolov7-w6-pose.pt")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+weigths = torch.load("models/yolov7-w6-pose.pt", map_location=device)
+model = weigths["model"]
+_ = model.float().eval()
+
+if torch.cuda.is_available():
+    model.half().to(device)
+
+
+def scan_image(image_path, labels=None, save_image=False):
+    image_name = image_path.split("/")[-1]
+    image = cv2.imread(image_path)
+    image = letterbox(image, 960, stride=64, auto=True)[0]
+    image_ = image.copy()
+    image = transforms.ToTensor()(image)
+    image = torch.tensor(np.array([image.numpy()]))
+
+    if torch.cuda.is_available():
+        image = image.half().to(device)
+    output, _ = model(image)
+    output = non_max_suppression_kpt(output, 0.25, 0.65, nc=model.yaml["nc"], nkpt=model.yaml["nkpt"], kpt_label=True)
+    with torch.no_grad():
+        output = output_to_keypoint(output)
+    nimg = image[0].permute(1, 2, 0) * 255
+    nimg = nimg.cpu().numpy().astype(np.uint8)
+    nimg = cv2.cvtColor(nimg, cv2.COLOR_RGB2BGR)
+
+    body_points = np.zeros((output.shape[0], 17, 2))
+    for idx in range(output.shape[0]):
+        new_body_points = plot_skeleton_kpts(nimg, output[idx, 7:].T, 3)
+        body_points[idx] = new_body_points
+
+    angle1 = calc_angle(
+        [body_points[0, 5, 0], body_points[0, 5, 1]],
+        [body_points[0, 11, 0], body_points[0, 11, 1]],
+        [body_points[0, 13, 0], body_points[0, 13, 1]],
+    )
+
+    angle2 = calc_angle(
+        [body_points[0, 6, 0], body_points[0, 6, 1]],
+        [body_points[0, 12, 0], body_points[0, 12, 1]],
+        [body_points[0, 14, 0], body_points[0, 14, 1]],
+    )
+
+    min_angle = np.min([angle1, angle2])
+
+    print(f"file {image_name}")
+    print(f"angle1 {angle1}")
+    print(f"angle2 {angle2}")
+    print(f"min angle {min_angle}")
+    if labels != None:
+        print(f"label {labels[image_name]}")
+    print("---------------------")
+
+    if save_image:
+        cv2.imwrite(os.path.join("res", f"{image_name[:-4]}_detected.png"), nimg)
+
+    return body_points
 
 
 def calc_distance(point_1, point_2):
@@ -20,48 +81,6 @@ def calc_angle(point_1, point_2, point_3):
     return angle * 180 / np.pi
 
 
-def scan_image(image_path, labels=None, save_image=False):
-    results = model(image_path)[0]
-    detected_objects = results.keypoints.xy.numpy()
-    image_name = image_path.split("/")[-1]
-
-    for detected_object in detected_objects:
-        if len(detected_object) == 0:
-            continue
-
-        angle1 = calc_angle(
-            [detected_object[5, 0], detected_object[5, 1]],
-            [detected_object[11, 0], detected_object[11, 1]],
-            [detected_object[13, 0], detected_object[13, 1]],
-        )
-
-        angle2 = calc_angle(
-            [detected_object[6, 0], detected_object[6, 1]],
-            [detected_object[12, 0], detected_object[12, 1]],
-            [detected_object[14, 0], detected_object[14, 1]],
-        )
-
-        min_angle = np.min([angle1, angle2])
-
-        print(f"file {image_name}")
-        print(f"angle1 {angle1}")
-        print(f"angle2 {angle2}")
-        print(f"min angle {min_angle}")
-        if labels != None:
-            print(f"label {labels[image_name]}")
-        print("---------------------")
-
-        break
-
-    if save_image:
-        image = cv2.imread(image_path)
-        for detected_object in detected_objects:
-            for point in detected_object:
-                image = cv2.circle(image, (int(point[0]), int(point[1])), radius=8, color=(0, 0, 255), thickness=-1)
-
-        cv2.imwrite(os.path.join("results", f"{image_name[:-4]}_detected.png"), image)
-
-
 def scan_images(directory, save_images=False):
     with open(os.path.join(directory, "labels.json")) as f:
         labels = json.load(f)
@@ -75,4 +94,3 @@ def scan_images(directory, save_images=False):
 
 
 scan_images("state_images", save_images=True)
-# scan_image("state_images/IMG_1507.jpg", save_image=True)

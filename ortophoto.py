@@ -66,9 +66,9 @@ def get_pixel_latlon(image_path, pixel_x, pixel_y):
 def find_path(image_path, num_points=4, show=False):
     img = cv2.imread(image_path)
     height, width, _ = img.shape
-    hikers_location = (width, height)
+    hikers_location = (width, 0)
 
-    lower_blue = np.array([100, 150, 150])
+    lower_blue = np.array([90, 100, 100])
     upper_blue = np.array([130, 255, 255])
 
     blue_mask = get_hsv_range(img, lower_blue, upper_blue)
