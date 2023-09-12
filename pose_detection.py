@@ -47,7 +47,7 @@ class DetectedObject:
 
 
 def scan_image(image_path, label=None, save_image=False):
-    results = model.predict(image_path, imgsz=1920)[0]
+    results = model.predict(image_path, imgsz=1824)[0]
     keypoints_sets = results.keypoints.xy.numpy()
     image_name = image_path.split("/")[-1]
 
@@ -139,16 +139,33 @@ def run_inference(image_path, save_image=False):
         image = cv2.putText(
             image,
             result[0],
-            org=(int(detected_object.keypoints[0, 0] - 80), int(detected_object.keypoints[0, 1] + 100)),
+            org=(int(np.min(detected_object.keypoints[:, 0])), int(np.min(detected_object.keypoints[:, 1]) - 30)),
             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-            fontScale=2,
+            fontScale=1.5,
             color=(0, 0, 255),
-            thickness=2,
+            thickness=4,
         )
 
     cv2.imwrite("inference.png", image)
 
 
 # train("data/poses", save_images=True)
-run_inference("data/poses/frame3.jpg", save_image=True)
+# run_inference("data/poses/2023_0912_061349_175.JPG", save_image=True)
 # scan_image("data/poses/1694459588232.jpeg", save_image=True)
+
+
+def analyse_video():
+    cap = cv2.VideoCapture("rtsp://192.168.43.1:8554/fpv_stream")
+    while True:
+        ret, frame = cap.read()
+
+        if not ret:
+            break
+
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord(" "):
+            cv2.imwrite("captured_frame.png", frame)
+            break
+
+    cap.release()
+    print("kutas")
