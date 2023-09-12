@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 from sklearn.neighbors import KNeighborsClassifier
 import pickle
+import time
 
 model = YOLO("models/yolov8x-pose.pt")
 
@@ -149,23 +150,33 @@ def run_inference(image_path, save_image=False):
     cv2.imwrite("inference.png", image)
 
 
-# train("data/poses", save_images=True)
-# run_inference("data/poses/2023_0912_061349_175.JPG", save_image=True)
-# scan_image("data/poses/1694459588232.jpeg", save_image=True)
-
-
 def analyse_video():
     cap = cv2.VideoCapture("rtsp://192.168.43.1:8554/fpv_stream")
+    q_clicked = False
+
     while True:
         ret, frame = cap.read()
 
         if not ret:
             break
 
+        cv2.imshow("stream", frame)
         key = cv2.waitKey(1) & 0xFF
+
+        # trigger this if also if arrived at the waypoint
         if key == ord(" "):
             cv2.imwrite("captured_frame.png", frame)
-            break
+        elif key == ord("q"):
+            if q_clicked:
+                break
+            else:
+                q_clicked = True
 
     cap.release()
-    print("kutas")
+    run_inference("captured_frame.png", save_image=True)
+
+
+# train("data/poses", save_images=True)
+# run_inference("data/poses/2023_0912_061349_175.JPG", save_image=True)
+# scan_image("data/poses/1694459588232.jpeg", save_image=True)
+analyse_video()
