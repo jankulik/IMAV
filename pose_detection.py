@@ -153,6 +153,8 @@ def run_inference(image_path, save_image=False):
 def analyse_video():
     cap = cv2.VideoCapture("rtsp://192.168.43.1:8554/fpv_stream")
     q_clicked = False
+    captured_pictures = 0
+    last_captured_picture = ""
 
     while True:
         ret, frame = cap.read()
@@ -163,9 +165,10 @@ def analyse_video():
         cv2.imshow("stream", frame)
         key = cv2.waitKey(1) & 0xFF
 
-        # trigger this if also if arrived at the waypoint
         if key == ord(" "):
-            cv2.imwrite("captured_frame.png", frame)
+            last_captured_picture = f"captured_pictures/captured_frame_{captured_pictures}.png"
+            captured_pictures += 1
+            cv2.imwrite(last_captured_picture, frame)
         elif key == ord("q"):
             if q_clicked:
                 break
@@ -173,7 +176,7 @@ def analyse_video():
                 q_clicked = True
 
     cap.release()
-    run_inference("captured_frame.png", save_image=True)
+    run_inference(last_captured_picture, save_image=True)
 
 
 # train("data/poses", save_images=True)
