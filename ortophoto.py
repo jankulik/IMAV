@@ -11,10 +11,10 @@ def get_hsv_range(image, lower_color, upper_color):
     return mask
 
 
-def draw_shortest_path(img, image_path, starting_location, locations, iteration_number):
-    print(
-        f"Location of marker {iteration_number + 1}: {get_pixel_latlon(image_path, starting_location[0], starting_location[1])}"
-    )
+def draw_shortest_path(img, image_path, starting_location, locations, marker_locations, iteration_number):
+    marker_location = get_pixel_latlon(image_path, starting_location[0], starting_location[1])
+    marker_locations.append(marker_location)
+    print(f"Location of marker {iteration_number + 1}: {marker_location}")
 
     if locations.shape[0] == 0:
         return
@@ -30,6 +30,7 @@ def draw_shortest_path(img, image_path, starting_location, locations, iteration_
         image_path,
         next_location,
         new_locations,
+        marker_locations,
         iteration_number=iteration_number + 1,
     )
 
@@ -87,6 +88,7 @@ def find_path(image_path, num_points=4, show=False):
         cv2.drawMarker(img, tuple(centroid), (0, 0, 255), cv2.MARKER_CROSS, 20, 2)
         cv2.drawContours(img, [points], -1, (0, 255, 0), 3)
 
+    marker_locations = []
     distances_from_hikers = np.linalg.norm(centroids - hikers_location, axis=1)
     starting_location_index = np.argmin(distances_from_hikers)
     starting_location = centroids[starting_location_index]
@@ -95,10 +97,19 @@ def find_path(image_path, num_points=4, show=False):
         image_path,
         starting_location,
         np.delete(centroids, starting_location_index, axis=0),
+        marker_locations,
         iteration_number=0,
     )
 
     cv2.imwrite("results/orthophotos/ortophoto_trail.png", img)
+
+    with open("results/orthophotos/locations.txt", "w") as file:
+        file.write("Locations of the markers, counting from the top right corner:\n")
+        for i, marker_location in enumerate(marker_locations):
+            file.write(f"Location of marker {i + 1}: ")
+            file.write(f"({marker_location[0]}, {marker_location[1]})")
+            file.write("\n")
+        file.close()
 
     if show:
         cv2.imshow("Detected Blue Squares", img)

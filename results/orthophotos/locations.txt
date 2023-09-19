@@ -1,0 +1,5 @@
+Locations of the markers, counting from the top right corner:
+Location of marker 1: (50.90968706902711, 6.225235445503485)
+Location of marker 2: (50.90929816036494, 6.225074702433063)
+Location of marker 3: (50.90892372665235, 6.224927694332624)
+Location of marker 4: (50.908577282168125, 6.224793616559284)
